@@ -7,11 +7,25 @@ import { useToast } from '../../context/ToastContext'
 import { getProducts, saveProduct, deleteProduct, getSellerOrders, updateOrderStatus, getSellers, saveSeller, getSettings, getCoupons, saveCoupon, deleteCoupon, getReviews, addAudit } from '../../lib/firestore'
 import { CATEGORIES } from '../../data/demo'
 import { formatTaka, uid } from '../../lib/format'
+import { uploadImage } from '../../lib/upload'
 import SEO from '../../components/SEO'
 import ProductImage from '../../components/ProductImage'
 import { EmptyState } from '../../components/States'
 
 const TABS = ['overview', 'products', 'orders', 'earnings', 'reviews', 'coupons', 'settings']
+
+// Upload via the server-side ImgBB proxy (/api/upload); fall back to a local
+// data-URL preview when the proxy is unavailable (e.g. no IMGBB_API_KEY set).
+async function handleUpload(file, setter, toast, lang) {
+  const { url, preview } = await uploadImage(file)
+  if (url) {
+    setter(url)
+    toast.success(lang === 'bn' ? 'ছবি আপলোড হয়েছে' : 'Image uploaded')
+  } else {
+    setter(preview)
+    toast.info(lang === 'bn' ? 'ছবি সার্ভারে যায়নি — শুধু প্রিভিউ দেখানো হচ্ছে' : 'Upload unavailable — local preview only')
+  }
+}
 
 export default function SellerDashboard() {
   const { t, lang } = useLanguage()
@@ -138,7 +152,7 @@ function ProductManager({ sellerId, products, onChange }) {
           <div><label className="text-sm font-medium" htmlFor="sp-stock">{t('stock')}</label><input id="sp-stock" type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={`${inputCls} mt-1`} /></div>
           <div className="sm:col-span-2"><label className="text-sm font-medium" htmlFor="sp-variants">{t('variants')}</label><input id="sp-variants" value={form.variants} onChange={(e) => setForm({ ...form, variants: e.target.value })} placeholder="S, M, L" className={`${inputCls} mt-1`} /></div>
           <div className="sm:col-span-2"><label className="text-sm font-medium" htmlFor="sp-image">Image URL</label><input id="sp-image" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://…" className={`${inputCls} mt-1`} />
-            <label className="mt-2 flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-medium hover:border-primary"><Upload className="h-5 w-5 text-primary" />{lang === 'bn' ? 'ছবি আপলোড (প্রিভিউ)' : 'Upload image (preview)'}<input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => setForm((prev) => ({ ...prev, image: r.result })); r.readAsDataURL(f) }} /></label>
+            <label className="mt-2 flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-medium hover:border-primary"><Upload className="h-5 w-5 text-primary" />{lang === 'bn' ? 'ছবি আপলোড' : 'Upload image'}<input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f, (url) => setForm((prev) => ({ ...prev, image: url })), toast, lang) }} /></label>
             {form.image && <div className="mt-2 h-24 w-24 overflow-hidden rounded-lg border"><ProductImage src={form.image} alt="Preview" className="h-full w-full object-cover" /></div>}
           </div>
           <div className="sm:col-span-2"><label className="text-sm font-medium" htmlFor="sp-desc">{t('description')}</label><textarea id="sp-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="mt-1 w-full rounded-lg border p-2" /></div>
@@ -271,7 +285,6 @@ function StoreSettings({ seller, onChange }) {
   const [name, setName] = useState(seller?.storeName || '')
   const [logo, setLogo] = useState(seller?.logo || '')
   const [banner, setBanner] = useState(seller?.banner || '')
-  const fileToDataUrl = (file, setter) => { const r = new FileReader(); r.onload = () => setter(r.result); r.readAsDataURL(file) }
   const save = (e) => {
     e.preventDefault()
     saveSeller({ ...seller, storeName: name, storeNameBn: name, logo, banner })
@@ -284,13 +297,13 @@ function StoreSettings({ seller, onChange }) {
       <div><label className="text-sm font-medium" htmlFor="ss-name">{t('storeName')}</label><input id="ss-name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1 h-11 w-full rounded-lg border px-3" /></div>
       <div>
         <label className="text-sm font-medium">Store logo</label>
-        <label className="mt-1 flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-medium hover:border-primary"><Upload className="h-5 w-5 text-primary" />Upload logo<input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && fileToDataUrl(e.target.files[0], setLogo)} /></label>
+        <label className="mt-1 flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-medium hover:border-primary"><Upload className="h-5 w-5 text-primary" />Upload logo<input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], setLogo, toast, lang)} /></label>
         {logo && <div className="mt-2 h-20 w-20 overflow-hidden rounded-lg border"><ProductImage src={logo} alt="Logo preview" className="h-full w-full object-cover" /></div>}
-        <p className="mt-1 text-xs text-muted">{lang === 'bn' ? 'ডেমো মোডে ছবি ব্রাউজারেই প্রিভিউ হয়; Firebase চালু থাকলে Storage-এ আপলোড হয়।' : 'In Demo Mode the image is previewed locally; with Firebase configured it uploads to Storage.'}</p>
+        <p className="mt-1 text-xs text-muted">{lang === 'bn' ? 'ছবি ImgBB-তে আপলোড হয় (সার্ভার-সাইড); আপলোড না থাকলে শুধু প্রিভিউ দেখায়।' : 'Images upload to ImgBB (server-side); without upload configured, shows a local preview.'}</p>
       </div>
       <div>
         <label className="text-sm font-medium">Store banner</label>
-        <label className="mt-1 flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-medium hover:border-primary"><Upload className="h-5 w-5 text-primary" />Upload banner<input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && fileToDataUrl(e.target.files[0], setBanner)} /></label>
+        <label className="mt-1 flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm font-medium hover:border-primary"><Upload className="h-5 w-5 text-primary" />Upload banner<input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], setBanner, toast, lang)} /></label>
         {banner && <div className="mt-2 h-24 w-full overflow-hidden rounded-lg border"><ProductImage src={banner} alt="Banner preview" className="h-full w-full object-cover" /></div>}
       </div>
       <button type="submit" className="min-h-[44px] rounded-lg bg-primary px-6 font-semibold text-white">{t('save')}</button>

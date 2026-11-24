@@ -93,3 +93,18 @@ npm run build
 - [ ] Google Search Console: verify ownership, submit `sitemap.xml`
 - [ ] App Check enabled
 - [ ] Backup: enable Firestore scheduled exports
+
+## Image uploads (ImgBB, no Firebase Storage needed)
+
+Firebase Storage on new projects requires the Blaze (pay-as-you-go) plan, so
+SP Marketplace uploads product, logo and banner images to ImgBB instead:
+
+- The browser never sees the ImgBB key. Uploads go to the server-side
+  `api/upload.js` Vercel Serverless Function, which reads `IMGBB_API_KEY`
+  from the environment and forwards the image to ImgBB.
+- Set `IMGBB_API_KEY` in Vercel: Project → Settings → Environment Variables
+  (Production). Redeploy after adding it. Without the variable, uploads fall
+  back to a local preview and show a notice — nothing breaks.
+- Never put the key in frontend code, in `.env` committed files, or in the
+  public repo. For Cloud Functions use only, the same key name goes in
+  `functions/.env` (gitignored).
