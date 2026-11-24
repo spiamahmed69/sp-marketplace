@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Smartphone, Shirt, ShoppingBasket, Sofa, Sparkles, Dumbbell, Tv, Watch, Zap, Truck, ShieldCheck, RotateCcw, Headphones } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
-import { getProducts, getBanners, getSellers } from '../lib/firestore'
-import { CATEGORIES } from '../data/demo'
+import { getProducts, getBanners, getSellers, getCategories } from '../lib/firestore'
+
 import { formatTaka } from '../lib/format'
 import SEO from '../components/SEO'
 import ProductCard from '../components/ProductCard'
@@ -103,7 +103,7 @@ export default function Home() {
       <section className="mx-auto max-w-7xl px-3 sm:px-4 mt-8" aria-label={t('categories')}>
         <div className="flex items-center justify-between"><h2 className="text-xl sm:text-2xl font-extrabold">{t('categories')}</h2><Link to="/products" className="text-sm font-semibold text-primary min-h-[44px] flex items-center">{t('products')} →</Link></div>
         <div className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-8">
-          {CATEGORIES.map((c) => {
+          {getCategories().map((c) => {
             const Icon = CAT_ICONS[c.icon] || Smartphone
             return (
               <Link key={c.slug} to={`/category/${c.slug}`} className="flex flex-col items-center gap-2 rounded-xl border border-gray-100 bg-white p-3 text-center shadow-sm hover:border-primary hover:shadow transition">

@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import { isDemoMode } from '../lib/firebase'
-import { CATEGORIES } from '../data/demo'
+import { getCategories } from '../lib/firestore'
 
 export default function Navbar() {
   const { lang, setLang, t } = useLanguage()
@@ -91,7 +91,7 @@ export default function Navbar() {
         <div className="mx-auto flex max-w-7xl items-center gap-1 px-4">
           <NavLink to="/" className={({ isActive }) => `px-3 py-2.5 text-sm font-semibold ${isActive ? 'text-primary' : 'hover:text-primary'}`}>{t('home')}</NavLink>
           <NavLink to="/products" className={({ isActive }) => `px-3 py-2.5 text-sm font-semibold ${isActive ? 'text-primary' : 'hover:text-primary'}`}>{t('products')}</NavLink>
-          {CATEGORIES.map((c) => (
+          {getCategories().map((c) => (
             <NavLink key={c.slug} to={`/category/${c.slug}`} className={({ isActive }) => `px-3 py-2.5 text-sm font-medium ${isActive ? 'text-primary' : 'hover:text-primary'}`}>{lang === 'bn' ? c.nameBn : c.name}</NavLink>
           ))}
         </div>
@@ -100,7 +100,7 @@ export default function Navbar() {
         <nav className="lg:hidden border-t bg-white px-4 py-2" aria-label="Mobile menu">
           <NavLink to="/" onClick={() => setMenu(false)} className="block min-h-[44px] py-2.5 font-semibold">{t('home')}</NavLink>
           <NavLink to="/products" onClick={() => setMenu(false)} className="block min-h-[44px] py-2.5 font-semibold">{t('products')}</NavLink>
-          {CATEGORIES.map((c) => (
+          {getCategories().map((c) => (
             <NavLink key={c.slug} to={`/category/${c.slug}`} onClick={() => setMenu(false)} className="block min-h-[44px] py-2.5">{lang === 'bn' ? c.nameBn : c.name}</NavLink>
           ))}
           <NavLink to="/seller/register" onClick={() => setMenu(false)} className="block min-h-[44px] py-2.5 font-semibold text-primary">{t('becomeSeller')}</NavLink>

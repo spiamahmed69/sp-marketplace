@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { SearchX, SlidersHorizontal } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
-import { getProducts, getSellers, getCategory } from '../lib/firestore'
-import { CATEGORIES } from '../data/demo'
+import { getProducts, getSellers, getCategory, getCategories } from '../lib/firestore'
+
 import SEO from '../components/SEO'
 import ProductCard from '../components/ProductCard'
 import { ProductCardSkeleton, EmptyState } from '../components/States'
@@ -73,7 +73,7 @@ export default function Products({ mode = 'all' }) {
               <h2 className="font-bold">{t('categories')}</h2>
               <ul className="mt-2 space-y-1 text-sm">
                 <li><Link to="/products" className="block min-h-[36px] py-1 hover:text-primary">{t('products')}</Link></li>
-                {CATEGORIES.map((c) => (
+                {getCategories().map((c) => (
                   <li key={c.slug}><Link to={`/category/${c.slug}`} className={`block min-h-[36px] py-1 hover:text-primary ${slug === c.slug ? 'font-bold text-primary' : ''}`}>{lang === 'bn' ? c.nameBn : c.name}</Link></li>
                 ))}
               </ul>

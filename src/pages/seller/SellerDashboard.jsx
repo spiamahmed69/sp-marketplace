@@ -4,8 +4,8 @@ import { Package, ShoppingCart, Wallet, Star, Plus, Pencil, Trash2, Upload, Badg
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import { getProducts, saveProduct, deleteProduct, getSellerOrders, updateOrderStatus, getSellers, saveSeller, getSettings, getCoupons, saveCoupon, deleteCoupon, getReviews, addAudit } from '../../lib/firestore'
-import { CATEGORIES } from '../../data/demo'
+import { getProducts, saveProduct, deleteProduct, getSellerOrders, updateOrderStatus, getSellers, saveSeller, getSettings, getCoupons, saveCoupon, deleteCoupon, getReviews, addAudit, getCategories } from '../../lib/firestore'
+
 import { formatTaka, uid } from '../../lib/format'
 import { uploadImage } from '../../lib/upload'
 import SEO from '../../components/SEO'
@@ -146,7 +146,7 @@ function ProductManager({ sellerId, products, onChange }) {
         <form onSubmit={save} className="mt-3 rounded-xl border bg-white p-4 grid gap-3 sm:grid-cols-2">
           <div><label className="text-sm font-medium" htmlFor="sp-name">{t('productName')} (EN)</label><input id="sp-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={`${inputCls} mt-1`} /></div>
           <div><label className="text-sm font-medium" htmlFor="sp-namebn">{t('productName')} (বাংলা)</label><input id="sp-namebn" value={form.nameBn} onChange={(e) => setForm({ ...form, nameBn: e.target.value })} className={`${inputCls} mt-1`} /></div>
-          <div><label className="text-sm font-medium" htmlFor="sp-cat">{t('category')}</label><select id="sp-cat" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} mt-1`}>{CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select></div>
+          <div><label className="text-sm font-medium" htmlFor="sp-cat">{t('category')}</label><select id="sp-cat" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} mt-1`}>{getCategories().map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select></div>
           <div><label className="text-sm font-medium" htmlFor="sp-price">{t('productPrice')}</label><input id="sp-price" type="number" min="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className={`${inputCls} mt-1`} /></div>
           <div><label className="text-sm font-medium" htmlFor="sp-old">Old price (৳)</label><input id="sp-old" type="number" min="0" value={form.oldPrice} onChange={(e) => setForm({ ...form, oldPrice: e.target.value })} className={`${inputCls} mt-1`} /></div>
           <div><label className="text-sm font-medium" htmlFor="sp-stock">{t('stock')}</label><input id="sp-stock" type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={`${inputCls} mt-1`} /></div>

@@ -4,8 +4,8 @@ import { Users, Store, Package, Wallet, Check, X, Trash2, Plus, ShieldCheck } fr
 import { useLanguage } from '../../context/LanguageContext'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import { getOrders, getSellerOrders, updateOrderStatus, getUsers, getProducts, saveProduct, getSellers, saveSeller, getCoupons, saveCoupon, deleteCoupon, getBanners, saveBanner, getAuditLogs, addAudit, getModerators, saveModerator, deleteModerator, getSettings, saveSettings } from '../../lib/firestore'
-import { CATEGORIES } from '../../data/demo'
+import { getOrders, getSellerOrders, updateOrderStatus, getUsers, getProducts, saveProduct, getSellers, saveSeller, getCoupons, saveCoupon, deleteCoupon, getBanners, saveBanner, getAuditLogs, addAudit, getModerators, saveModerator, deleteModerator, getSettings, saveSettings, getCategories } from '../../lib/firestore'
+
 import { formatTaka, uid, timeAgo } from '../../lib/format'
 import SEO from '../../components/SEO'
 import { EmptyState } from '../../components/States'
@@ -156,13 +156,13 @@ function CategoryManager() {
   const { t, lang } = useLanguage()
   return (
     <div className="mt-4">
-      <h2 className="font-bold text-lg">{t('categoryManagement')} ({CATEGORIES.length})</h2>
+      <h2 className="font-bold text-lg">{t('categoryManagement')} ({getCategories().length})</h2>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {CATEGORIES.map((c) => (
+        {getCategories().map((c) => (
           <div key={c.slug} className="rounded-xl border bg-white p-4"><p className="font-bold">{lang === 'bn' ? c.nameBn : c.name}</p><p className="text-xs text-muted">/{c.slug} · {getProducts().filter((p) => p.category === c.slug && !p.deleted).length} {lang === 'bn' ? 'পণ্য' : 'products'}</p></div>
         ))}
       </div>
-      <p className="mt-3 text-sm text-muted">{lang === 'bn' ? 'নতুন ক্যাটাগরি যোগ করতে src/data/demo.js-এর CATEGORIES-এ যোগ করুন (প্রোডাকশনে Firestore categories কালেকশন ব্যবহার করুন)।' : 'To add a category, add it to CATEGORIES in src/data/demo.js (in production use the Firestore categories collection).'}</p>
+      <p className="mt-3 text-sm text-muted">{lang === 'bn' ? 'ক্যাটাগরি Firestore-এর categories কালেকশন থেকে আসে (সিড করতে scripts/seed-firestore.mjs চালান)।' : 'Categories come from the Firestore categories collection (seed with scripts/seed-firestore.mjs).'}</p>
     </div>
   )
 }

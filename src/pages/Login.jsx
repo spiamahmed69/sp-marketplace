@@ -7,6 +7,7 @@ import { LogIn } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { isDemoMode } from '../lib/firebase'
 import { DEMO_USERS } from '../data/demo'
 import SEO from '../components/SEO'
 
@@ -46,6 +47,7 @@ export default function Login() {
           <button type="submit" disabled={loading} className="min-h-[48px] w-full rounded-lg bg-primary font-bold text-white hover:bg-primary-dark disabled:opacity-60">{loading ? '…' : t('login')}</button>
         </form>
         <p className="mt-4 text-center text-sm">{t('dontHaveAccount')} <Link to="/register" className="font-semibold text-primary">{t('register')}</Link></p>
+        {isDemoMode && (
         <div className="mt-6 rounded-xl bg-surface p-4">
           <p className="text-sm font-bold">{t('demoAccounts')}</p>
           <div className="mt-2 grid gap-2">
@@ -56,6 +58,7 @@ export default function Login() {
             ))}
           </div>
         </div>
+        )}
       </div>
     </div>
   )

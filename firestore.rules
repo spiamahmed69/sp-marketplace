@@ -1,16 +1,39 @@
 rules_version = '2';
 
 // SP Marketplace — Firestore Security Rules.
-// NEVER use `allow read, write: if true`. Roles are enforced here AND in the
-// Cloud Functions via Firebase Admin SDK custom claims (functions/index.js).
-// A role value stored in a user document or sent from the frontend is never
-// trusted for admin rights — only the custom claim on the auth token counts.
+//
+// Roles are enforced here. Admin/moderator rights are trusted from EITHER
+// (a) Firebase Auth custom claims (set by the setAdminClaim Cloud Function —
+// the strong, long-term mechanism; needs the Blaze plan), OR (b) the `role`
+// field on the user's own `users/{uid}` document. (b) exists only because
+// Cloud Functions are not deployed yet (Spark plan, no Blaze): the first
+// admin is bootstrapped by setting `role: 'admin'` on their users doc in the
+// Firebase console — see DEPLOYMENT.md §5. Once Functions are live, set
+// claims for every admin/moderator and remove the doc-role fallback from
+// isAdmin()/isModerator() below.
+// A role value sent from the frontend is never trusted — only the token claim
+// or the document in this database counts, and a client can never change its
+// own `role` (see the users update rule).
+//
+// Client order writes: the createOrder Cloud Function is not deployed yet
+// (Spark plan), so checkout writes orders directly from the client under
+// tight constraints below (caller must own the order, it must start as
+// processing/unpaid, totals must be numbers). Stock re-checks and payment
+// verification still need the Function before launch — see DEPLOYMENT.md §7.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isSignedIn() { return request.auth != null; }
-    function isAdmin() { return isSignedIn() && request.auth.token.admin == true; }
-    function isModerator() { return isSignedIn() && request.auth.token.moderator == true; }
+    function hasUserDoc() { return exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function docRole() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role; }
+    function isAdmin() {
+      return isSignedIn() && (request.auth.token.admin == true
+        || (hasUserDoc() && docRole() == 'admin'));
+    }
+    function isModerator() {
+      return isSignedIn() && (request.auth.token.moderator == true
+        || (hasUserDoc() && docRole() == 'moderator'));
+    }
     function isAdminOrModerator() { return isAdmin() || isModerator(); }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     function isSellerDoc(sellerId) {
@@ -21,8 +44,9 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if resource.data.status == 'approved';
       allow read: if isAdminOrModerator() || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId));
-      allow create: if isSignedIn() && request.resource.data.sellerId != null && isSellerDoc(request.resource.data.sellerId)
-        && request.resource.data.status == 'pending';
+      allow create: if isAdminOrModerator()
+        || (isSignedIn() && request.resource.data.sellerId != null && isSellerDoc(request.resource.data.sellerId)
+            && request.resource.data.status == 'pending');
       allow update: if isAdminOrModerator()
         || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId)
             && request.resource.data.status == 'pending');
@@ -39,17 +63,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     match /sellers/{sellerId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read: if true; // public storefront info
+      allow create: if isAdmin() || (isSignedIn() && request.resource.data.ownerId == request.auth.uid);
       allow update: if isAdmin() || isOwner(resource.data.ownerId);
       allow delete: if isAdmin();
     }
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isSignedIn() && request.auth.uid == userId;
-      // Role changes are forbidden from the client — only the Admin SDK can
-      // set custom claims (setAdminClaim function). This rule blocks privilege
-      // escalation through the users collection.
+      // Role changes are forbidden from the client — only the Admin SDK (or
+      // the console, for the first-admin bootstrap) can set a role. This rule
+      // blocks privilege escalation through the users collection.
       allow update: if isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'admin', 'moderator']);
       allow delete: if isAdmin();
     }
@@ -61,23 +85,38 @@ service cloud.firestore {
     }
     match /orders/{orderId} {
       allow read: if isAdminOrModerator() || (isSignedIn() && resource.data.customerId == request.auth.uid);
-      // Orders are created only via the createOrder Cloud Function.
-      allow create, update, delete: if false;
+      // Client checkout (see header). Status changes are admin/moderator only.
+      allow create: if isSignedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.status == 'processing'
+        && request.resource.data.paymentStatus in ['unpaid', 'pending_verification']
+        && request.resource.data.total is number;
+      allow update: if isAdminOrModerator();
+      allow delete: if isAdmin();
     }
     match /sellerOrders/{orderId} {
       allow read: if isAdminOrModerator() || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId));
+      // Created alongside the parent order by the same customer.
+      allow create: if isSignedIn()
+        && request.resource.data.status == 'processing'
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.parentOrderId)).data.customerId == request.auth.uid;
       allow update: if isAdminOrModerator()
         || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
-      allow create, delete: if false;
+      allow delete: if isAdmin();
     }
     match /payments/{paymentId} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.customerId == request.auth.uid);
-      allow create, update, delete: if false; // only Cloud Functions write payments
+      // Client checkout record (method + txn id + last4 only — never a full
+      // card number). Verification happens server-side only.
+      allow create: if isSignedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.status in ['cod_pending', 'awaiting_verification'];
+      allow update, delete: if isAdmin();
     }
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAdminOrModerator() || (isSignedIn() && request.resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
     }
     match /coupons/{couponId} {
@@ -102,7 +141,10 @@ service cloud.firestore {
     }
     match /auditLogs/{logId} {
       allow read: if isAdminOrModerator();
-      allow create, update, delete: if false; // only Cloud Functions / admin writes
+      // Admins/moderators write audit entries from the dashboard; a seller's
+      // entries stay in the local log only until Functions are live.
+      allow create: if isAdminOrModerator();
+      allow update, delete: if false;
     }
   }
 }

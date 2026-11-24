@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Send, MapPin, Phone, Mail, Facebook, Youtube, Instagram } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useToast } from '../context/ToastContext'
-import { CATEGORIES } from '../data/demo'
+import { getCategories } from '../lib/firestore'
 
 export default function Footer() {
   const { lang, t } = useLanguage()
@@ -47,7 +47,7 @@ export default function Footer() {
           <div>
             <h3 className="font-bold text-white">{t('categories')}</h3>
             <ul className="mt-3 space-y-2 text-sm">
-              {CATEGORIES.slice(0, 6).map((c) => (
+              {getCategories().slice(0, 6).map((c) => (
                 <li key={c.slug}><Link className="hover:text-white min-h-[32px] inline-block" to={`/category/${c.slug}`}>{lang === 'bn' ? c.nameBn : c.name}</Link></li>
               ))}
             </ul>

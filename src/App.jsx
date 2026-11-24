@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { LanguageProvider } from './context/LanguageContext'
 import { ToastProvider } from './context/ToastContext'
@@ -6,6 +6,9 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { WishlistProvider } from './context/WishlistContext'
 import Navbar from './components/Navbar'
+import SyncBanner from './components/SyncBanner'
+import { isDemoMode } from './lib/firebase'
+import { syncFromFirestore } from './lib/firestore'
 import Footer from './components/Footer'
 import MobileBottomNav from './components/MobileBottomNav'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -43,6 +46,16 @@ function Loading() {
 }
 
 export default function App() {
+  // Production: load the Firestore cache once, then re-render the pages with
+  // the real data whenever a sync finishes (initial load, login/logout).
+  const [, setSyncTick] = useState(0)
+  useEffect(() => {
+    if (isDemoMode) return undefined
+    syncFromFirestore()
+    const onSync = () => setSyncTick((t) => t + 1)
+    window.addEventListener('sp:firestore-sync', onSync)
+    return () => window.removeEventListener('sp:firestore-sync', onSync)
+  }, [])
   return (
     <LanguageProvider>
       <ToastProvider>
@@ -51,6 +64,7 @@ export default function App() {
             <WishlistProvider>
               <BrowserRouter>
                 <div className="flex min-h-screen flex-col pb-16 md:pb-0">
+                  <SyncBanner />
                   <Navbar />
                   <main className="flex-1">
                     <Suspense fallback={<Loading />}>

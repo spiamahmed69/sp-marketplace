@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import { useToast } from '../context/ToastContext'
-import { getSeller } from '../data/demo'
+import { getSeller } from '../lib/firestore'
 import ProductImage from './ProductImage'
 import RatingStars from './RatingStars'
 
