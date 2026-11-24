@@ -1,0 +1,108 @@
+rules_version = '2';
+
+// SP Marketplace — Firestore Security Rules.
+// NEVER use `allow read, write: if true`. Roles are enforced here AND in the
+// Cloud Functions via Firebase Admin SDK custom claims (functions/index.js).
+// A role value stored in a user document or sent from the frontend is never
+// trusted for admin rights — only the custom claim on the auth token counts.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && request.auth.token.admin == true; }
+    function isModerator() { return isSignedIn() && request.auth.token.moderator == true; }
+    function isAdminOrModerator() { return isAdmin() || isModerator(); }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isSellerDoc(sellerId) {
+      return isSignedIn() && get(/databases/$(database)/documents/sellers/$(sellerId)).data.ownerId == request.auth.uid;
+    }
+
+    // Public catalogue — anyone can read approved products & categories.
+    match /products/{productId} {
+      allow read: if resource.data.status == 'approved';
+      allow read: if isAdminOrModerator() || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId));
+      allow create: if isSignedIn() && request.resource.data.sellerId != null && isSellerDoc(request.resource.data.sellerId)
+        && request.resource.data.status == 'pending';
+      allow update: if isAdminOrModerator()
+        || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId)
+            && request.resource.data.status == 'pending');
+      allow delete: if isAdmin();
+    }
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdminOrModerator();
+    }
+    match /stores/{storeId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+    match /sellers/{sellerId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAdmin() || isOwner(resource.data.ownerId);
+      allow delete: if isAdmin();
+    }
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Role changes are forbidden from the client — only the Admin SDK can
+      // set custom claims (setAdminClaim function). This rule blocks privilege
+      // escalation through the users collection.
+      allow update: if isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'admin', 'moderator']);
+      allow delete: if isAdmin();
+    }
+    match /carts/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /wishlists/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /orders/{orderId} {
+      allow read: if isAdminOrModerator() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      // Orders are created only via the createOrder Cloud Function.
+      allow create, update, delete: if false;
+    }
+    match /sellerOrders/{orderId} {
+      allow read: if isAdminOrModerator() || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId));
+      allow update: if isAdminOrModerator()
+        || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow create, delete: if false;
+    }
+    match /payments/{paymentId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow create, update, delete: if false; // only Cloud Functions write payments
+    }
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdminOrModerator();
+    }
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+    match /commissions/{commissionId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.sellerId != null && isSellerDoc(resource.data.sellerId));
+      allow write: if false; // only Cloud Functions write commissions
+    }
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /auditLogs/{logId} {
+      allow read: if isAdminOrModerator();
+      allow create, update, delete: if false; // only Cloud Functions / admin writes
+    }
+  }
+}

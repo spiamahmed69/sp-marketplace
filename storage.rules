@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// SP Marketplace — Firebase Storage Rules.
+// Only signed-in users may upload, only images, max 5 MB, only into their
+// own folder (or a seller's own store folder). Public read for product/store
+// images so the storefront can display them.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() { return request.auth != null; }
+    function isImage() { return request.resource.contentType.matches('image/.*'); }
+    function isSmall() { return request.resource.size < 5 * 1024 * 1024; }
+
+    match /products/{sellerId}/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == sellerId && isImage() && isSmall();
+    }
+    match /stores/{sellerId}/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == sellerId && isImage() && isSmall();
+    }
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == userId && isImage() && isSmall();
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
