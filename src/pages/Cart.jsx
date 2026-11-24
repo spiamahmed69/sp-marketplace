@@ -63,24 +63,24 @@ export default function Cart() {
                   {lang === 'bn' ? seller?.storeNameBn : seller?.storeName} · {lang === 'bn' ? 'ডেলিভারি' : 'Delivery'} {formatTaka(settings.shippingDhaka)}
                 </header>
                 {group.map((it) => (
-                  <div key={it.key} className="flex gap-3 border-t p-3">
-                    <Link to={`/product/${it.product.id}`} className="h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-surface">
+                  <div key={it.key} className="flex flex-wrap gap-x-3 gap-y-2 border-t p-3">
+                    <Link to={`/product/${it.product.id}`} className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-surface sm:h-24 sm:w-24">
                       <ProductImage src={it.product.images?.[0]} alt={it.product.name} className="h-full w-full object-cover" />
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link to={`/product/${it.product.id}`} className="line-clamp-2 font-medium hover:text-primary">{lang === 'bn' ? it.product.nameBn : it.product.name}</Link>
                       {it.variant && <p className="text-xs text-muted mt-0.5">{it.variant}</p>}
                       <p className="mt-1 font-bold text-primary">{formatTaka(it.product.price)}</p>
-                      <div className="mt-2 flex items-center gap-3">
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
                         <div className="flex items-center rounded-lg border">
-                          <button onClick={() => setQty(it.key, it.qty - 1)} aria-label="Decrease quantity" className="flex h-10 w-10 items-center justify-center"><Minus className="h-4 w-4" /></button>
+                          <button onClick={() => setQty(it.key, it.qty - 1)} aria-label="Decrease quantity" className="flex h-11 w-11 items-center justify-center"><Minus className="h-4 w-4" /></button>
                           <span className="w-8 text-center font-semibold" aria-label="Quantity">{it.qty}</span>
-                          <button onClick={() => setQty(it.key, Math.min(it.product.stock, it.qty + 1))} aria-label="Increase quantity" className="flex h-10 w-10 items-center justify-center"><Plus className="h-4 w-4" /></button>
+                          <button onClick={() => setQty(it.key, Math.min(it.product.stock, it.qty + 1))} aria-label="Increase quantity" className="flex h-11 w-11 items-center justify-center"><Plus className="h-4 w-4" /></button>
                         </div>
-                        <button onClick={() => { remove(it.key); toast.info(lang === 'bn' ? 'পণ্য সরানো হয়েছে' : 'Item removed') }} className="flex min-h-[44px] items-center gap-1 text-sm text-red-600 hover:underline" aria-label="Remove item"><Trash2 className="h-4 w-4" />{t('delete')}</button>
+                        <button onClick={() => { remove(it.key); toast.info(lang === 'bn' ? 'পণ্য সরানো হয়েছে' : 'Item removed') }} className="flex min-h-[44px] shrink-0 items-center gap-1 text-sm text-red-600 hover:underline" aria-label="Remove item"><Trash2 className="h-4 w-4" />{t('delete')}</button>
                       </div>
                     </div>
-                    <p className="font-bold whitespace-nowrap">{formatTaka(it.product.price * it.qty)}</p>
+                    <p className="w-full text-right font-bold whitespace-nowrap sm:w-auto">{formatTaka(it.product.price * it.qty)}</p>
                   </div>
                 ))}
               </section>
@@ -99,8 +99,8 @@ export default function Cart() {
           </div>
           <div className="mt-4 flex gap-2">
             <label htmlFor="coupon" className="sr-only">Coupon code</label>
-            <input id="coupon" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="SP10" className="h-11 flex-1 rounded-lg border px-3 uppercase" />
-            <button onClick={applyCoupon} className="flex min-h-[44px] items-center gap-1 rounded-lg bg-ink px-4 font-semibold text-white"><Tag className="h-4 w-4" />{t('applyCoupon')}</button>
+            <input id="coupon" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="SP10" className="h-11 min-w-0 flex-1 rounded-lg border px-3 uppercase" />
+            <button onClick={applyCoupon} className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg bg-ink px-3 font-semibold whitespace-nowrap text-white sm:px-4"><Tag className="h-4 w-4" />{t('applyCoupon')}</button>
           </div>
           <p className="mt-2 text-xs text-muted">Try: SP10 (10% off over ৳1,000) · WELCOME50 · FLASH20</p>
           <button onClick={() => navigate('/checkout', { state: { coupon } })} className="mt-4 min-h-[48px] w-full rounded-lg bg-primary font-bold text-white hover:bg-primary-dark">{t('checkout')} →</button>

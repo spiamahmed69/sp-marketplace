@@ -25,7 +25,7 @@
 // once Functions are deployed — until then the client-side check and the
 // Firestore rules (firestore.rules) are the enforcement.
 import { db, auth, isDemoMode } from './firebase'
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, deleteDoc, where } from 'firebase/firestore'
 import { PRODUCTS, SELLERS, CATEGORIES, COUPONS, BANNERS, SETTINGS, DEMO_USERS } from '../data/demo'
 import { uid, idempotencyKey } from './format'
 
@@ -113,9 +113,14 @@ export function syncFromFirestore({ force = false } = {}) {
   emitSync()
   syncPromise = (async () => {
     const errors = {}
-    const loadList = async (coll, cacheKey, mergeKey) => {
+    const loadList = async (coll, cacheKey, mergeKey, constraints = []) => {
       try {
-        const snap = await getDocs(collection(db, coll))
+        // The products rule only allows reads where status == 'approved', so
+        // an unfiltered list query is rejected with permission-denied for
+        // visitors. Filter the query to match the rule (Firestore requires
+        // the query itself to guarantee every returned doc is readable).
+        const ref = constraints.length ? query(collection(db, coll), ...constraints) : collection(db, coll)
+        const snap = await getDocs(ref)
         const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
         LS_SET(cacheKey, mergeKey ? mergeById(docs, LS(mergeKey, [])) : docs)
       } catch (e) {
@@ -133,7 +138,7 @@ export function syncFromFirestore({ force = false } = {}) {
       }
     }
     await Promise.all([
-      loadList('products', REMOTE.products),
+      loadList('products', REMOTE.products, undefined, [where('status', '==', 'approved')]),
       loadList('sellers', REMOTE.sellers),
       loadList('categories', REMOTE.categories),
       loadList('coupons', REMOTE.coupons),
