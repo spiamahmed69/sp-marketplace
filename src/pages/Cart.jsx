@@ -71,7 +71,11 @@ export default function Cart() {
                       <Link to={`/product/${it.product.id}`} className="line-clamp-2 font-medium hover:text-primary">{lang === 'bn' ? it.product.nameBn : it.product.name}</Link>
                       {it.variant && <p className="text-xs text-muted mt-0.5">{it.variant}</p>}
                       <p className="mt-1 font-bold text-primary">{formatTaka(it.product.price)}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      {/* Mobile: the actions row spans the full item width (under the
+                          thumbnail too) so stepper + delete fit on one line at 320px.
+                          92px = 80px thumb + 12px gap. On sm+ it stays inside the
+                          info column, desktop layout unchanged. */}
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 max-sm:-ml-[92px] max-sm:w-[calc(100%+92px)]">
                         <div className="flex items-center rounded-lg border">
                           <button onClick={() => setQty(it.key, it.qty - 1)} aria-label="Decrease quantity" className="flex h-11 w-11 items-center justify-center"><Minus className="h-4 w-4" /></button>
                           <span className="w-8 text-center font-semibold" aria-label="Quantity">{it.qty}</span>
@@ -100,7 +104,7 @@ export default function Cart() {
           <div className="mt-4 flex gap-2">
             <label htmlFor="coupon" className="sr-only">Coupon code</label>
             <input id="coupon" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="SP10" className="h-11 min-w-0 flex-1 rounded-lg border px-3 uppercase" />
-            <button onClick={applyCoupon} className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg bg-ink px-3 font-semibold whitespace-nowrap text-white sm:px-4"><Tag className="h-4 w-4" />{t('applyCoupon')}</button>
+            <button onClick={applyCoupon} className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg bg-ink px-2 font-semibold whitespace-nowrap text-white sm:px-4"><Tag className="h-4 w-4" />{t('applyCoupon')}</button>
           </div>
           <p className="mt-2 text-xs text-muted">Try: SP10 (10% off over ৳1,000) · WELCOME50 · FLASH20</p>
           <button onClick={() => navigate('/checkout', { state: { coupon } })} className="mt-4 min-h-[48px] w-full rounded-lg bg-primary font-bold text-white hover:bg-primary-dark">{t('checkout')} →</button>

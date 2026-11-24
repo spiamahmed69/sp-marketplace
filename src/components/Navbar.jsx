@@ -42,14 +42,14 @@ export default function Navbar() {
           </Link>
           <form onSubmit={submitSearch} className="hidden md:flex flex-1 max-w-xl mx-auto" role="search">
             <label htmlFor="nav-search" className="sr-only">{t('searchPlaceholder')}</label>
-            <input id="nav-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('searchPlaceholder')} className="h-11 flex-1 rounded-l-lg border border-gray-300 px-3 focus:border-primary focus:outline-none" />
+            <input id="nav-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('searchPlaceholder')} className="h-11 min-w-0 flex-1 rounded-l-lg border border-gray-300 px-3 focus:border-primary focus:outline-none" />
             <button type="submit" className="flex h-11 min-w-[44px] items-center gap-1 rounded-r-lg bg-primary px-4 font-semibold text-white hover:bg-primary-dark"><Search className="h-5 w-5" /><span className="hidden lg:inline">{t('search')}</span></button>
           </form>
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <button onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-sm font-semibold hover:bg-surface" aria-label="Switch language">
               <Globe className="h-5 w-5 text-primary" />{lang === 'bn' ? 'EN' : 'বাং'}
             </button>
-            <Link to="/wishlist" className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-surface" aria-label={t('wishlist')}>
+            <Link to="/wishlist" className="relative hidden min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-surface sm:flex" aria-label={t('wishlist')}>
               <Heart className="h-6 w-6" />
               {ids.length > 0 && <span className="absolute top-0 right-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">{ids.length}</span>}
             </Link>
@@ -82,7 +82,7 @@ export default function Navbar() {
         <form onSubmit={submitSearch} className="md:hidden pb-3" role="search">
           <label htmlFor="nav-search-m" className="sr-only">{t('searchPlaceholder')}</label>
           <div className="flex">
-            <input id="nav-search-m" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('searchPlaceholder')} className="h-11 flex-1 rounded-l-lg border border-gray-300 px-3 focus:border-primary focus:outline-none" />
+            <input id="nav-search-m" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('searchPlaceholder')} className="h-11 min-w-0 flex-1 rounded-l-lg border border-gray-300 px-3 focus:border-primary focus:outline-none" />
             <button type="submit" className="flex h-11 min-w-[44px] items-center justify-center rounded-r-lg bg-primary px-3 text-white" aria-label={t('search')}><Search className="h-5 w-5" /></button>
           </div>
         </form>
